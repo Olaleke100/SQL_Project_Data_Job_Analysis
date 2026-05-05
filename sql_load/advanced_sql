@@ -1,0 +1,188 @@
+-- january jobs
+SELECT
+    job_title_short,
+    company_id,
+    job_location
+FROM
+    january_jobs
+
+UNION ALL
+
+-- febuary jobs
+SELECT
+    job_title_short,
+    company_id,
+    job_location
+FROM
+    febuary_jobs
+
+UNION ALL
+
+-- march jobs
+SELECT
+    job_title_short,
+    company_id,
+    job_location
+FROM
+    march_jobs
+
+-- union practice problem
+WITH temp_post AS (
+SELECT
+    skills,
+    type,
+    job_id
+FROM
+    skills_dim
+RIGHT JOIN skills_job_dim ON skills_dim.skill_id  = skills_job_dim.skill_id
+WHERE job_id IN (
+        SELECT
+            job_id
+        FROM
+            january_jobs
+        UNION ALL
+        SELECT
+            job_id
+        FROM
+            febuary_jobs
+        UNION ALL
+        SELECT
+            job_id
+        FROM
+            march_jobs
+    )
+)
+
+SELECT
+    skills,
+    type,
+    salary_year_avg AS yearly_avg,
+    EXTRACT(MONTH FROM job_posted_date) AS posted_month
+FROM
+    job_postings_fact
+LEFT JOIN temp_post ON job_postings_fact.job_id = temp_post.job_id
+WHERE 
+    salary_year_avg > 70000
+
+-- union practice problem end
+
+
+--practice problem 8
+SELECT 
+    quarter1.job_title_short,
+    quarter1.job_location,
+    quarter1.job_via,
+    quarter1.job_posted_date::DATE,
+    quarter1.salary_year_avg
+FROM (
+    SELECT *
+    FROM january_jobs
+    UNION ALL
+    SELECT *
+    FROM febuary_jobs
+    UNION ALL
+    SELECT *
+    FROM march_jobs
+) AS quarter1
+WHERE
+    quarter1.salary_year_avg > 70000 AND
+    quarter1.job_title_short = 'Data Analyst'
+ORDER BY
+    quarter1.salary_year_avg DESC
+
+-- end of practice problem 8
+SELECT *
+FROM company_dim
+LIMIT 10
+
+SELECT 
+    job_title_short,
+    job_location,
+    job_via,
+    job_posted_date::DATE,
+    salary_year_avg,
+    salary_hour_avg,
+    link,
+    thumbnail
+FROM (
+    SELECT *
+    FROM job_postings_fact
+) AS quarter1
+LEFT JOIN company_dim ON quarter1.company_id = company_dim.company_id
+WHERE
+    job_location = 'Nigeria' AND
+    quarter1.job_title_short = 'Data Analyst'
+ORDER BY
+    quarter1.salary_year_avg DESC
+
+
+
+/*practice problem*/
+SELECT
+    job_schedule_type,
+    avg(salary_year_avg) AS yearly_avg,
+    avg(salary_hour_avg) AS hourly_avg
+FROM
+    job_postings_fact
+WHERE 
+    job_posted_date::DATE > '2023-06-01'
+GROUP BY
+    job_schedule_type
+
+
+SELECT
+    COUNT(job_id) AS job_count,
+    EXTRACT(MONTH FROM job_posted_date::DATE AT TIME ZONE 'UTC' AT TIME ZONE 'EST') AS month
+FROM
+    job_postings_fact
+GROUP BY
+   MONTH
+order BY
+    month DESC;
+
+
+
+SELECT
+    name,
+    job_health_insurance,
+    EXTRACT(MONTH FROM job_posted_date::DATE AT TIME ZONE 'UTC' AT TIME ZONE 'EST') AS month_date
+
+FROM
+    company_dim,
+    job_postings_fact
+   
+WHERE
+    EXTRACT(MONTH FROM job_posted_date::DATE AT TIME ZONE 'UTC' AT TIME ZONE 'EST') = 4 OR
+    EXTRACT(MONTH FROM job_posted_date::DATE AT TIME ZONE 'UTC' AT TIME ZONE 'EST') = 5 OR
+    EXTRACT(MONTH FROM job_posted_date::DATE AT TIME ZONE 'UTC' AT TIME ZONE 'EST') = 6 AND
+    job_health_insurance = TRUE
+
+
+LIMIT
+    100000;
+
+-- case practice problem
+SELECT 
+    salary_year_avg
+    
+FROM 
+    job_postings_fact
+LIMIT
+    1000;
+
+
+-- case exercise
+SELECT 
+    *,
+    CASE
+        WHEN salary_year_avg > 0 AND salary_year_avg < 50000 THEN 'Low'
+        WHEN salary_year_avg > 50000 AND salary_year_avg < 100000 THEN 'Standard'
+        WHEN salary_year_avg > 100000 THEN 'High'
+    ELSE NULL
+    END
+FROM
+    job_postings_fact
+WHERE
+    job_title_short = 'Data Analyst'
+ORDER BY 
+    salary_year_avg DESC;
